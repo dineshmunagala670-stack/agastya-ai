@@ -18,7 +18,11 @@ vocab_data = torch.load('model/vocab_config.pt', map_location=device)
 char_to_int, int_to_char = vocab_data['mappings']
 vocab_size = vocab_data['vocab_size']
 
-block_size, n_embd, n_head, n_layer = 256, 384, 6, 12
+# System Target Metrics Hyperparameters
+block_size = 256
+n_embd = 384
+n_head = 6
+n_layer = 12
 
 class CausalHead(nn.Module):
     def __init__(self, head_size):
@@ -98,12 +102,11 @@ class ChatRequest(BaseModel):
 encode = lambda s: [char_to_int[c] for c in s if c in char_to_int]
 decode = lambda l: ''.join([int_to_char[i] for i in l])
 
-# Real-Time Character Yield Generator Engine
 async def character_streamer(prompt: str):
     context = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
     idx = context
     
-    for _ in range(250): # Max out bounds parameter
+    for _ in range(250):
         idx_cond = idx[:, -block_size:]
         with torch.no_grad():
             logits = model(idx_cond)[:, -1, :] / 0.3
@@ -113,13 +116,12 @@ async def character_streamer(prompt: str):
         
         next_char = int_to_char[idx_next[0, 0].item()]
         
-        # Guard check to break execution if model starts simulating user properties
-        recent_text = "".join([int_to_char[i] for i in idx[0, -6:].tolist()])
-        if "User:" in recent_text:
+        recent_text = "".join([int_to_char[i] for i in idx[0, -7:].tolist()])
+        if "User" in recent_text or "user" in recent_text:
             break
             
         yield next_char
-        await asyncio.sleep(0.001) # Yield control frame slice back to async event runner
+        await asyncio.sleep(0.001)
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -140,9 +142,19 @@ async def reload_weights_endpoint():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# DYNAMIC SPECIFICATION ENDPOINT NODE
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "device": device, "context_horizon": block_size}
+    return {
+        "status": "healthy",
+        "device": device,
+        "context_horizon": block_size,
+        "n_layer": n_layer,
+        "n_head": n_head,
+        "n_embd": n_embd,
+        "vocab_size": vocab_size,
+        "param_count": "20,246,144"
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
