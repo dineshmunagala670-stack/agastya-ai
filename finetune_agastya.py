@@ -184,17 +184,3 @@ for iter in range(max_iters):
 torch.save(model.state_dict(), 'model/agastya_final_chatbot.pth')
 print("\n[PIPELINE COMPLETE] Weights compiled into 'model/agastya_final_chatbot.pth'.")
 
-# 7. REAL-TIME AUTOMATED GITHUB MLOps DEPLOYMENT STREAM
-try:
-    print("\n[GIT MLOps] Target iterations accomplished. Initiating automated cloud synchronization...")
-    
-    # Run a sequential list of terminal Git execution arrays safely inside Windows shell architectures
-    subprocess.run(["git", "add", "."], check=True, shell=True)
-    subprocess.run(["git", "commit", "-m", "feat(mlops): real-time automated model weights upgrade sequence"], check=True, shell=True)
-    
-    print("[GIT MLOps] Pushing streaming pointer layers and code to GitHub remote...")
-    subprocess.run(["git", "push", "origin", "main"], check=True, shell=True)
-    
-    print("\n[SUCCESS] Entire project codebase and Git LFS binary files pushed completely live!")
-except Exception as e:
-    print(f"\n[GIT ERROR] Automated cloud syncing paused. Details: {e}")
