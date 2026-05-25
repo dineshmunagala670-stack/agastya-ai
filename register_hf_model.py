@@ -1,43 +1,80 @@
 # register_hf_model.py
-import torch
-import torch.nn as nn
-from transformers import PreTrainedModel, PretrainedConfig
+import os
+from huggingface_hub import HfApi, login, create_repo
 
-# 1. Define a standardized configuration tracking file for the cloud
-class AgastyaConfig(PretrainedConfig):
-    model_type = "agastya"
-    def __init__(self, vocab_size=256, block_size=256, n_embd=384, n_head=6, n_layer=12, **kwargs):
-        super().__init__(**kwargs)
-        self.vocab_size = vocab_size
-        self.block_size = block_size
-        self.n_embd = n_embd
-        self.n_head = n_head
-        self.n_layer = n_layer
+print("=" * 60)
+print("🤗 SYSTEM: STARTING AGASTYA 38M UPLOAD CORE")
+print("=" * 60)
 
-# 2. Wrap your structural PyTorch layers into the HF standard module
-class AgastyaHFModel(PreTrainedModel):
-    config_class = AgastyaConfig
-    
-    def __init__(self, config):
-        super().__init__(config)
-        # Explicitly map your existing Agastya architecture blocks here
-        self.token_embedding_table = nn.Embedding(config.vocab_size, config.n_embd)
-        self.position_embedding_table = nn.Embedding(config.block_size, config.n_embd)
-        
-        # Reference your existing TransformerBlock initialization array
-        # (Assuming your block and head layers from talk_to_agastya are imported or included here)
-        self.ln_f = nn.LayerNorm(config.n_embd)
-        self.lm_head = nn.Linear(config.n_embd, config.vocab_size)
-        
-    def forward(self, idx, labels=None):
-        B, T = idx.shape
-        x = self.token_embedding_table(idx) + self.position_embedding_table(torch.arange(T, device=idx.device))
-        # Pass through your transformer blocks...
-        logits = self.lm_head(self.ln_f(x))
-        
-        loss = None
-        if labels is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), labels.view(-1))
-            
-        # Return standard Hugging Face output format
-        return CausalLMOutputWithPast(loss=loss, logits=logits)
+REPO_ID = "Dinesh05976/agastya-ai"
+WEIGHTS = "model/agastya_final_chatbot.pth"
+TOKENIZER = "model/agastya_tokenizer.json"
+
+# Step 1: Verify files exist locally
+for path in [WEIGHTS, TOKENIZER]:
+    if not os.path.exists(path):
+        print(f"❌ CRITICAL ERROR: Missing local file {path}")
+        exit()
+
+# Step 2: Authenticate session
+print("\n🔐 Step 1: Logging into Hugging Face Hub...")
+login()
+
+api = HfApi()
+
+# Step 3: Ensure remote repository is ready
+print(f"\n🏗️ Step 2: Verifying remote repository space: {REPO_ID}")
+create_repo(repo_id=REPO_ID, repo_type="model", exist_ok=True)
+
+# Step 4: Write model card configuration strings
+readme_content = """---
+language:
+- en
+tags:
+- pytorch
+- causal-lm
+- transformer
+- text-generation
+pipeline_tag: text-generation
+---
+# Project Agastya (38M Parameter Engine)
+Custom 38-million parameter autoregressive transformer model built from scratch using PyTorch layers.
+
+## 📊 Model Architecture Specs
+- **Parameters**: 38,154,240
+- **Layers**: 12 Blocks
+- **Heads**: 8 Parallel Heads
+- **Embed Dimension**: 512 Dims
+- **Context Window**: 256 Tokens
+- **Vocab Size**: 2,000 Tokens
+"""
+
+with open("README.md", "w", encoding="utf-8") as f:
+    f.write(readme_content)
+
+# Step 5: Execute file streams to the cloud matrix
+print("\n🚀 Step 3: Uploading weight matrices and vocabulary configurations...")
+files_to_upload = [
+    (WEIGHTS, "agastya_final_chatbot.pth"),
+    (TOKENIZER, "agastya_tokenizer.json"),
+    ("README.md", "README.md")
+]
+
+for local_path, repo_path in files_to_upload:
+    print(f"Streaming: {local_path} ---> Hub: {repo_path}...")
+    try:
+        api.upload_file(
+            path_or_fileobj=local_path,
+            path_in_repo=repo_path,
+            repo_id=REPO_ID,
+            repo_type="model"
+        )
+        print(f"   ✅ Successfully uploaded {repo_path}")
+    except Exception as e:
+        print(f"   ❌ Error uploading {repo_path}: {e}")
+        exit()
+
+print("\n" + "=" * 60)
+print("🎉 ALL ASSETS LIVE ON HUGGING FACE HUB!")
+print(f"🔗 View here: https://huggingface.co/{REPO_ID}")
+print("=" * 60)
