@@ -39,7 +39,7 @@ export default function AgastyaFullConnectedPage() {
     }
   }, [terminalLines]);
 
-  // 📡 REAL-WORLD API STREAM CONNECTION PIPELINE
+  // 📡 CLOUD API STREAM CONNECTION PIPELINE
   const handleExecute = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputQuery.trim() || isStreaming) return;
@@ -53,8 +53,8 @@ export default function AgastyaFullConnectedPage() {
     setTerminalLines((prev) => [...prev, { type: "ai", text: "" }]);
 
     try {
-      // Establish live stream reader handshake straight to your FastAPI endpoints
-      const response = await fetch("http://127.0.0.1:8000/chat", {
+      // Establish live stream reader handshake straight to your Hugging Face Space backend container
+      const response = await fetch("https://dinesh05976-agastya-ai.hf.space/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userPrompt }),
@@ -92,7 +92,7 @@ export default function AgastyaFullConnectedPage() {
         const architecturalCopy = [...prev];
         architecturalCopy[architecturalCopy.length - 1] = { 
           type: "ai", 
-          text: "⚠️ CRITICAL HANDSHAKE FLUID ERROR: The client UI could not bind to main_api.py server channels. Ensure your terminal script is running locally on port 8000." 
+          text: "⚠️ CRITICAL HANDSHAKE ERROR: The client UI could not bind to your Hugging Face Space endpoint. Ensure your container instance status is active and running." 
         };
         return architecturalCopy;
       });
@@ -146,7 +146,7 @@ export default function AgastyaFullConnectedPage() {
         {/* MID-SCREEN ABSTRACT GRADIENT FIELD CORE */}
         <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-gradient-to-tr from-zinc-700 via-zinc-900 to-black rounded-full blur-[120px] opacity-20 pointer-events-none z-0" />
 
-        {/* TYPOGRAPHY BOUNDARY: Reveals exactly 75% of text block */}
+        {/* TYPOGRAPHY BOUNDARY: Adjusted offset to reveal exactly 75% of the text block */}
         <div className="w-full absolute bottom-0 left-0 right-0 z-10 overflow-hidden translate-y-[25%] pointer-events-none">
           <h1 className="text-[18vw] font-black uppercase tracking-tighter leading-none text-white text-center transform scale-y-105 select-none">
             Agastya
@@ -177,7 +177,7 @@ export default function AgastyaFullConnectedPage() {
             Stream Language Parameters Natively
           </h2>
           <p className="text-zinc-400 text-sm leading-relaxed max-w-md">
-            Interact with the freshly calibrated 38M parameter weight layout. Sub-word token vectors are processed on local CUDA tensors with integrated stop-guards to prevent infinite loop generations.
+            Interact with the freshly calibrated 38M parameter weight layout. Sub-word token vectors are processed on local CPU container matrices with integrated stop-guards to prevent infinite loop generations.
           </p>
           <div className="pt-2">
             <span className="text-[11px] font-mono text-zinc-600 uppercase block">Engine Architecture Precision:</span>
@@ -283,7 +283,7 @@ export default function AgastyaFullConnectedPage() {
           </div>
 
           <a 
-            href="https://github.com/dineshmunagala670-stack/agastya-ai" 
+            href="https://github.com/YOUR_USERNAME/YOUR_REPO_NAME" 
             target="_blank"
             rel="noopener noreferrer"
             className="w-full md:w-auto px-6 py-4 rounded-lg bg-white text-black font-mono font-bold text-xs tracking-wider uppercase text-center hover:bg-zinc-200 transition-colors whitespace-nowrap"
