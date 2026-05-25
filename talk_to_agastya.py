@@ -2,16 +2,32 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+import os
+from tokenizers import Tokenizer
 
+# 1. CORE ARCHITECTURAL METRICS (UPSCALED TO 38M)
+block_size = 256           
+n_embd = 512               
+n_head = 8                 
+n_layer = 12               
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-vocab_data = torch.load('model/vocab_config.pt')
-char_to_int, int_to_char = vocab_data['mappings']
-vocab_size = vocab_data['vocab_size']
+print("=" * 60)
+print(f"🤖 INITIALIZING LOCAL INFERENCE PORT (38M CORE) ON: [{device.upper()}]")
+print("=" * 60)
 
-# MATCHING NATIVE 256 BLUEPRINT CONFIGURATION
-block_size, n_embd, n_head, n_layer = 256, 384, 6, 12
+# 2. LOAD COMPREHENSIVE SUB-WORD BPE CONFIGURATIONS
+TOKENIZER_PATH = 'model/agastya_tokenizer.json'
+if not os.path.exists(TOKENIZER_PATH):
+    raise FileNotFoundError(f"Critical Error: '{TOKENIZER_PATH}' missing.")
 
+tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
+vocab_size = tokenizer.get_vocab_size()
+
+stop_id = tokenizer.token_to_id("<|endoftext|>")
+user_id = tokenizer.token_to_id("User:")
+
+# 3. TRANSFORMER STRUCTURE COMPONENT BLUEPRINTS
 class CausalHead(nn.Module):
     def __init__(self, head_size):
         super().__init__()
@@ -55,47 +71,70 @@ class AgastyaGPT(nn.Module):
         self.blocks = nn.Sequential(*[TransformerBlock(n_embd, n_head=n_head) for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size)
+        
     def forward(self, idx):
         B, T = idx.shape
         x = self.token_embedding_table(idx) + self.position_embedding_table(torch.arange(T, device=device))
         return self.lm_head(self.ln_f(self.blocks(x)))
-        
-    def generate(self, idx, max_new_tokens, temperature=0.3):
-        for _ in range(max_new_tokens):
+
+model = AgastyaGPT().to(device)
+
+# 4. LOAD CALIBRATED SUB-WORD BRAIN WEIGHTS
+WEIGHTS_PATH = 'model/agastya_final_chatbot.pth'
+if os.path.exists(WEIGHTS_PATH):
+    state_dict = torch.load(WEIGHTS_PATH, map_location=device)
+    cleaned_weights = {k: v for k, v in state_dict.items() if 'tril' not in k}
+    model.load_state_dict(cleaned_weights, strict=False)
+    model.eval()
+    print(f"[SYSTEM] Upscaled 38M matrix successfully initialized from: {WEIGHTS_PATH}")
+else:
+    print("[WARNING] Local inference running on uncalibrated variables.")
+
+print("\n🤖 Agastya Interface Operational. Type 'exit' or 'quit' to terminate chat session.")
+print("-" * 60)
+
+# 5. CONSOLE CHAT INTERACTION LOOP
+while True:
+    try:
+        user_input = input("\nUser: ").strip()
+        if not user_input:
+            continue
+        if user_input.lower() in ['exit', 'quit']:
+            break
+
+        formatted_prompt = f"User: {user_input}\nAgastya:"
+        context_ids = tokenizer.encode(formatted_prompt).ids
+        idx = torch.tensor([context_ids], dtype=torch.long, device=device)
+
+        print("Agastya: ", end="", flush=True)
+
+        generated_tokens = []
+        previous_decoded_string = ""
+
+        for _ in range(200):
             idx_cond = idx[:, -block_size:]
-            logits = self(idx_cond)[:, -1, :] / temperature
+            with torch.no_grad():
+                logits = model(idx_cond)[:, -1, :] / 0.5
+            
             probs = F.softmax(logits, dim=-1)
             idx_next = torch.multinomial(probs, num_samples=1)
             idx = torch.cat((idx, idx_next), dim=1)
             
-            recent_text = "".join([int_to_char[i] for i in idx[0, -6:].tolist()])
-            if "User:" in recent_text:
-                idx = idx[:, :-5]
+            next_token_id = idx_next[0, 0].item()
+            
+            # 🎯 BULLETPROOF ID STOP-GUARD
+            if next_token_id == stop_id or next_token_id == user_id:
                 break
-        return idx
+                
+            generated_tokens.append(next_token_id)
+            
+            full_decoded_string = tokenizer.decode(generated_tokens)
+            next_text_chunk = full_decoded_string[len(previous_decoded_string):]
+            previous_decoded_string = full_decoded_string
+                
+            if next_text_chunk:
+                print(next_text_chunk, end="", flush=True)
+        print()
 
-model = AgastyaGPT().to(device)
-model.load_state_dict(torch.load('model/agastya_final_chatbot.pth', map_location=device))
-model.eval()
-
-print("====================================================")
-print("   AGASTYA NATIVE 256 MULTI-LINE RUNTIME MODULE     ")
-print("   Type 'quit' to terminate system execution loop   ")
-print("====================================================")
-
-encode = lambda s: [char_to_int[c] for c in s if c in char_to_int]
-decode = lambda l: ''.join([int_to_char[i] for i in l])
-
-while True:
-    user_msg = input("\nYou: ")
-    if user_msg.lower() == 'quit': break
-    
-    prompt = f"User: {user_msg}\nAgastya:"
-    context = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
-    
-    print("Agastya: ", end="")
-    with torch.no_grad():
-        out_tokens = model.generate(context, max_new_tokens=250, temperature=0.3)[0].tolist()
-    
-    response = decode(out_tokens[len(encode(prompt)):])
-    print(response.strip())
+    except KeyboardInterrupt:
+        break

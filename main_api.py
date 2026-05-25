@@ -12,9 +12,8 @@ import asyncio
 from tokenizers import Tokenizer
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"\n[SERVER] Launching Agastya 20M Sub-word Streaming Stack on: [{device.upper()}]")
+print(f"\n[SERVER] Launching Agastya 38M Sub-word Streaming Stack on: [{device.upper()}]")
 
-# Load trained BPE configurations
 TOKENIZER_PATH = 'model/agastya_tokenizer.json'
 if not os.path.exists(TOKENIZER_PATH):
     raise FileNotFoundError(f"Critical Error: '{TOKENIZER_PATH}' was not located in the workspace root.")
@@ -22,10 +21,14 @@ if not os.path.exists(TOKENIZER_PATH):
 tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
 vocab_size = tokenizer.get_vocab_size()
 
-# Architectural Dimension Hyperparameters 
+# Fetch target numerical special token IDs for strict generation intercept guards
+stop_id = tokenizer.token_to_id("<|endoftext|>")
+user_id = tokenizer.token_to_id("User:")
+
+# Architectural Dimension Hyperparameters (38M SPECIFICATION)
 block_size = 256
-n_embd = 384
-n_head = 6
+n_embd = 512
+n_head = 8
 n_layer = 12
 
 class CausalHead(nn.Module):
@@ -104,33 +107,32 @@ class ChatRequest(BaseModel):
     message: str
 
 async def subword_token_streamer(prompt: str):
-    """Streams text pieces flawlessly using an immutable delta text decoder loop"""
     context_ids = tokenizer.encode(prompt).ids
     idx = torch.tensor([context_ids], dtype=torch.long, device=device)
     
     generated_tokens = []
     previous_decoded_string = ""
     
-    for _ in range(150): # Token generation target horizon ceiling
+    for _ in range(200): 
         idx_cond = idx[:, -block_size:]
         with torch.no_grad():
-            logits = model(idx_cond)[:, -1, :] / 0.45  # Sampling temperature configuration
+            logits = model(idx_cond)[:, -1, :] / 0.5  
         
         probs = F.softmax(logits, dim=-1)
         idx_next = torch.multinomial(probs, num_samples=1)
         idx = torch.cat((idx, idx_next), dim=1)
         
         next_token_id = idx_next[0, 0].item()
+        
+        # 🎯 BULLETPROOF ID STOP-GUARD: Halts stream instantly when token patterns hit boundaries
+        if next_token_id == stop_id or next_token_id == user_id:
+            break
+            
         generated_tokens.append(next_token_id)
         
-        # INDUSTRIAL-GRADE STREAMING METHOD: Compute structural textual deltas
         full_decoded_string = tokenizer.decode(generated_tokens)
         next_text_chunk = full_decoded_string[len(previous_decoded_string):]
         previous_decoded_string = full_decoded_string
-        
-        # AGGRESSIVE SYSTEM STOP-GUARD: Intercepts raw variations of turn-taking indicators
-        if "User" in next_text_chunk or "user" in next_text_chunk or "User" in full_decoded_string[-8:]:
-            break
             
         if next_text_chunk:
             yield next_text_chunk
@@ -140,7 +142,6 @@ async def subword_token_streamer(prompt: str):
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
-        # BPE special token anchors applied cleanly to format historical context
         formatted_prompt = f"User: {request.message}\nAgastya:"
         return StreamingResponse(subword_token_streamer(formatted_prompt), media_type="text/plain")
     except Exception as e:
@@ -152,7 +153,7 @@ async def reload_weights_endpoint():
         if device == 'cuda':
             torch.cuda.empty_cache()
         if load_weights_into_vram():
-            return {"status": "success", "message": "Sub-word parameter layers updated instantly in VRAM."}
+            return {"status": "success", "message": "38M Parameter layers mapped into VRAM instantly."}
         raise HTTPException(status_code=404, detail="Target checkpoint binary weights missing.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,7 +168,7 @@ def health_check():
         "n_head": n_head,
         "n_embd": n_embd,
         "vocab_size": vocab_size,
-        "param_count": "20,246,144"
+        "param_count": "38,154,240" 
     }
 
 if __name__ == "__main__":
