@@ -25,6 +25,17 @@ vocab_size = tokenizer.get_vocab_size()
 stop_id = tokenizer.token_to_id("<|endoftext|>")
 user_id = tokenizer.token_to_id("User:")
 
+# 🎭 HARDCODED PERSONA REGISTRY (Bypasses GPU Inference entirely for perfect safety)
+AGASTYA_PERSONA_ROUTES = {
+    "who are you": "I am Agastya, a custom local autoregressive transformer model running on your hardware layout.",
+    "what is your name": "My name is Agastya. I am a custom 38M parameter language model optimized for local streaming inference.",
+    "who made you": "I was created by Dinesh as an open-source local AI model project, synthesized directly on your workstation hardware.",
+    "who is your creator": "My creator is Dinesh. He architected my 12-layer neural network layout and trained me using custom PyTorch modules.",
+    "hi": "Hello! Agastya core systems online. How can I assist your development workflow today?",
+    "hello": "Greetings! Agastya streaming backend is operational on your local CUDA workstation. What are we building?",
+    "hey": "Hey! All 38M parameters are initialized and running at maximum clock speed. What's the plan?"
+}
+
 # Architectural Dimension Hyperparameters (38M SPECIFICATION)
 block_size = 256
 n_embd = 512
@@ -94,7 +105,7 @@ def load_weights_into_vram():
 
 load_weights_into_vram()
 
-app = FastAPI(title="Agastya Core Sub-word Engine")
+app = FastAPI(title="Agastya Core 38M Engine")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -124,7 +135,6 @@ async def subword_token_streamer(prompt: str):
         
         next_token_id = idx_next[0, 0].item()
         
-        # 🎯 BULLETPROOF ID STOP-GUARD: Halts stream instantly when token patterns hit boundaries
         if next_token_id == stop_id or next_token_id == user_id:
             break
             
@@ -142,6 +152,20 @@ async def subword_token_streamer(prompt: str):
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
+        # Normalize the incoming string layout to catch conversational queries smoothly
+        clean_query = request.message.strip().lower().replace("?", "").replace("!", "")
+        
+        # Intercept Persona Queries matching static layout dictionaries
+        if clean_query in AGASTYA_PERSONA_ROUTES:
+            hardcoded_response = AGASTYA_PERSONA_ROUTES[clean_query]
+            
+            async def persona_streamer():
+                for word in hardcoded_response.split(" "):
+                    yield word + " "
+                    await asyncio.sleep(0.04)
+            return StreamingResponse(persona_streamer(), media_type="text/plain")
+            
+        # Neural Network Fallback
         formatted_prompt = f"User: {request.message}\nAgastya:"
         return StreamingResponse(subword_token_streamer(formatted_prompt), media_type="text/plain")
     except Exception as e:

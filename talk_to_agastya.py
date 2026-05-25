@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import os
+import time
 from tokenizers import Tokenizer
 
-# 1. CORE ARCHITECTURAL METRICS (UPSCALED TO 38M)
 block_size = 256           
 n_embd = 512               
 n_head = 8                 
@@ -13,10 +13,9 @@ n_layer = 12
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 print("=" * 60)
-print(f"🤖 INITIALIZING LOCAL INFERENCE PORT (38M CORE) ON: [{device.upper()}]")
+print(f"🤖 INITIALIZING LOCAL INFERENCE PORT (38M ENGINE) ON: [{device.upper()}]")
 print("=" * 60)
 
-# 2. LOAD COMPREHENSIVE SUB-WORD BPE CONFIGURATIONS
 TOKENIZER_PATH = 'model/agastya_tokenizer.json'
 if not os.path.exists(TOKENIZER_PATH):
     raise FileNotFoundError(f"Critical Error: '{TOKENIZER_PATH}' missing.")
@@ -27,7 +26,17 @@ vocab_size = tokenizer.get_vocab_size()
 stop_id = tokenizer.token_to_id("<|endoftext|>")
 user_id = tokenizer.token_to_id("User:")
 
-# 3. TRANSFORMER STRUCTURE COMPONENT BLUEPRINTS
+# Mirroring Persona Dictionary for matching features locally
+AGASTYA_PERSONA_ROUTES = {
+    "who are you": "I am Agastya, a custom local autoregressive transformer model running on your hardware layout.",
+    "what is your name": "My name is Agastya. I am a custom 38M parameter language model optimized for local streaming inference.",
+    "who made you": "I was created by Dinesh as an open-source local AI model project, synthesized directly on your workstation hardware.",
+    "who is your creator": "My creator is Dinesh. He architected my 12-layer neural network layout and trained me using custom PyTorch modules.",
+    "hi": "Hello! Agastya core systems online. How can I assist your development workflow today?",
+    "hello": "Greetings! Agastya streaming backend is operational on your local CUDA workstation. What are we building?",
+    "hey": "Hey! All 38M parameters are initialized and running at maximum clock speed. What's the plan?"
+}
+
 class CausalHead(nn.Module):
     def __init__(self, head_size):
         super().__init__()
@@ -79,7 +88,6 @@ class AgastyaGPT(nn.Module):
 
 model = AgastyaGPT().to(device)
 
-# 4. LOAD CALIBRATED SUB-WORD BRAIN WEIGHTS
 WEIGHTS_PATH = 'model/agastya_final_chatbot.pth'
 if os.path.exists(WEIGHTS_PATH):
     state_dict = torch.load(WEIGHTS_PATH, map_location=device)
@@ -93,7 +101,6 @@ else:
 print("\n🤖 Agastya Interface Operational. Type 'exit' or 'quit' to terminate chat session.")
 print("-" * 60)
 
-# 5. CONSOLE CHAT INTERACTION LOOP
 while True:
     try:
         user_input = input("\nUser: ").strip()
@@ -102,11 +109,22 @@ while True:
         if user_input.lower() in ['exit', 'quit']:
             break
 
+        print("Agastya: ", end="", flush=True)
+
+        # Pre-execution checks for identity routing
+        clean_query = user_input.lower().replace("?", "").replace("!", "")
+        if clean_query in AGASTYA_PERSONA_ROUTES:
+            hardcoded_text = AGASTYA_PERSONA_ROUTES[clean_query]
+            for word in hardcoded_text.split(" "):
+                print(word + " ", end="", flush=True)
+                time.sleep(0.04)
+            print()
+            continue
+
+        # Standard GPU Neural Pipeline Execution
         formatted_prompt = f"User: {user_input}\nAgastya:"
         context_ids = tokenizer.encode(formatted_prompt).ids
         idx = torch.tensor([context_ids], dtype=torch.long, device=device)
-
-        print("Agastya: ", end="", flush=True)
 
         generated_tokens = []
         previous_decoded_string = ""
@@ -122,7 +140,6 @@ while True:
             
             next_token_id = idx_next[0, 0].item()
             
-            # 🎯 BULLETPROOF ID STOP-GUARD
             if next_token_id == stop_id or next_token_id == user_id:
                 break
                 
