@@ -8,17 +8,22 @@ export default function AgastyaShowcase() {
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [loading, setLoading] = useState(false);
 
-  // Auto-scroll Anchor Ref
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Reference tied directly onto the scrollable view bounding layout box
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     checkSystemHealth();
   }, []);
 
-  // Trigger smooth scroll down every single time the text stream mutates
+  // Isolate auto-scrolling execution strictly inside the chat component view
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [messages]);
 
   const checkSystemHealth = async () => {
     try {
@@ -64,11 +69,18 @@ export default function AgastyaShowcase() {
         
         const characterChunk = decoder.decode(value, { stream: true });
         
+        // Immutable Object State Replication
         setMessages(prev => {
+          if (prev.length === 0) return prev;
+          
           const updated = [...prev];
-          if (updated.length > 0) {
-            updated[updated.length - 1].text += characterChunk;
-          }
+          const lastIndex = updated.length - 1;
+          
+          updated[lastIndex] = {
+            ...updated[lastIndex],
+            text: updated[lastIndex].text + characterChunk
+          };
+          
           return updated;
         });
       }
@@ -127,13 +139,13 @@ export default function AgastyaShowcase() {
         </div>
       </header>
 
-      {/* MAIN WORKSPACE INTERFACE */}
+      {/* WORKSPACE LAYOUT SECTIONS */}
       <main className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-8 flex-grow">
         
         {/* CONTROL DECK CONTROLLERS (LEFT SIDEBAR) */}
         <section className="lg:col-span-1 flex flex-col gap-6">
           
-          {/* MLOps SYNC MODULE CARD */}
+          {/* MLOps LIVE SYNC LAYER */}
           <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-lg flex flex-col justify-between h-fit">
             <div>
               <h3 className="text-sm font-bold text-zinc-300 tracking-wide uppercase border-b border-zinc-800 pb-2 mb-4">
@@ -161,9 +173,9 @@ export default function AgastyaShowcase() {
             </button>
           </div>
 
-          {/* NEW: OPEN SOURCE COMMUNITY CALLOUT CARD */}
+          {/* OPEN SOURCE COMMUNITY SHOWCASE CALLOUT */}
           <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-lg flex flex-col justify-between h-fit relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-full blur-xl group-hover:bg-teal-500/10 transition-all" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-full blur-xl" />
             <div>
               <h3 className="text-sm font-bold text-teal-400 tracking-wide uppercase border-b border-zinc-800 pb-2 mb-4">
                 Open Source Architecture
@@ -177,7 +189,7 @@ export default function AgastyaShowcase() {
               href="https://github.com/dineshmunagala670-stack/agastya-ai"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 px-4 rounded-md font-bold text-xs tracking-wider text-center transition-all duration-200 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-zinc-950 active:scale-98 shadow-lg shadow-teal-950/20 flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-4 rounded-md font-bold text-xs tracking-wider text-center transition-all duration-200 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-zinc-950 active:scale-98 shadow-lg flex items-center justify-center gap-2"
             >
               WANT TO TRAIN THIS YOURSELF?
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -186,7 +198,7 @@ export default function AgastyaShowcase() {
             </a>
           </div>
 
-          {/* MODEL TELEMETRY METRICS HUD */}
+          {/* INTERNAL SYSTEM STATS BAR */}
           <div className="bg-zinc-900/50 border border-zinc-900 p-5 rounded-lg text-xs text-zinc-500 space-y-2">
             <span className="font-bold text-zinc-400 uppercase tracking-wider block mb-1">Model Telemetry Metrics</span>
             <div className="flex justify-between border-b border-zinc-900 pb-1.5"><span>Parameter Layout Count</span><span className="font-mono text-zinc-400">20,246,144</span></div>
@@ -195,7 +207,7 @@ export default function AgastyaShowcase() {
           </div>
         </section>
 
-        {/* WORKSPACE CHAT TERMINAL CONTAINER */}
+        {/* COMPUTE TERMINAL SHELL PANEL */}
         <section className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-lg flex flex-col min-h-[500px] h-[600px] overflow-hidden shadow-2xl">
           <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -211,26 +223,38 @@ export default function AgastyaShowcase() {
             </span>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-4 flex flex-col gap-4 font-mono text-xs scrollbar-thin scrollbar-thumb-zinc-800">
+          {/* STREAM CONTENT PORT VIEW */}
+          <div 
+            ref={chatContainerRef} 
+            className="flex-grow overflow-y-auto p-4 flex flex-col gap-4 font-mono text-xs scrollbar-thin scrollbar-thumb-zinc-800"
+          >
             {messages.length === 0 && (
               <div className="text-zinc-600 italic text-center my-auto p-8">
-                // Streaming interface ready. Input prompts to observe real-time token projection.
+                // Streaming interface operational. Input parameters to execute real-time token projections.
               </div>
             )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] rounded-md p-3 whitespace-pre-wrap ${
-                  msg.sender === 'user' 
-                    ? 'bg-zinc-800 text-teal-400 border border-zinc-700 font-semibold' 
-                    : 'bg-zinc-950 text-zinc-300 border border-zinc-850 shadow-inner'
-                }`}>
-                  <span className="text-[10px] uppercase font-bold block opacity-40 mb-1">
-                    {msg.sender === 'user' ? '► USER_INPUT' : '▲ AGASTYA_STREAM_OUTPUT'}
-                  </span>
-                  {msg.text}
+            {messages.map((msg, i) => {
+              // IMMUTABLE REGEX DE-SPACING FILTER:
+              // Collapses double spaces and single character steps generated by raw string token arrays
+              const displayedText = msg.sender === 'ai'
+                ? msg.text.replace(/([^\s])\s/g, '$1').replace(/\s{2,}/g, ' ')
+                : msg.text;
+
+              return (
+                <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-md p-3 whitespace-pre-wrap ${
+                    msg.sender === 'user' 
+                      ? 'bg-zinc-800 text-teal-400 border border-zinc-700 font-semibold' 
+                      : 'bg-zinc-950 text-zinc-300 border border-zinc-850 shadow-inner'
+                  }`}>
+                    <span className="text-[10px] uppercase font-bold block opacity-40 mb-1">
+                      {msg.sender === 'user' ? '► USER_INPUT' : '▲ AGASTYA_STREAM_OUTPUT'}
+                    </span>
+                    {displayedText}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {loading && (
               <div className="flex justify-start animate-pulse">
                 <div className="bg-zinc-950 text-zinc-500 border border-zinc-850 rounded-md p-3 font-mono">
@@ -238,11 +262,9 @@ export default function AgastyaShowcase() {
                 </div>
               </div>
             )}
-            
-            {/* Hidden Auto-Scroll Target Element */}
-            <div ref={messagesEndRef} />
           </div>
 
+          {/* INTERACTION TRANSMISSION STRING FIELD */}
           <form onSubmit={handleSendMessage} className="p-4 bg-zinc-950 border-t border-zinc-800 flex gap-2">
             <input
               type="text"
@@ -255,7 +277,7 @@ export default function AgastyaShowcase() {
             <button
               type="submit"
               disabled={loading || !apiStatus.online}
-              className="bg-teal-600 hover:bg-teal-500 font-bold text-zinc-950 px-4 py-2 rounded-md text-xs tracking-wider transition-colors disabled:opacity-30 disabled:pointer-events-none active:scale-97"
+              className="bg-teal-600 hover:bg-teal-500 font-bold text-zinc-950 px-4 py-2 rounded-md text-xs tracking-wider transition-colors disabled:opacity-30"
             >
               EXECUTE
             </button>
