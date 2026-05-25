@@ -1,4 +1,4 @@
-# Project Agastya 20M 🚀
+# Project Agastya 38M 🚀
 
 An open-source, full-stack, custom character-level autoregressive Transformer language model platform built from scratch in PyTorch. Project Agastya features a real-time token-streaming FastAPI backend, a sleek developer telemetry dashboard built with Next.js, and an automated dynamic MLOps pipeline that pushes updates to GitHub and hot-swaps active GPU VRAM layers on the fly.
 
