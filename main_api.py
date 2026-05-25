@@ -9,16 +9,20 @@ from pydantic import BaseModel
 import os
 import uvicorn
 import asyncio
+from tokenizers import Tokenizer
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-print(f"\n[SERVER] Launching Agastya 20M Streaming Inference Stack on: [{device.upper()}]")
+print(f"\n[SERVER] Launching Agastya 20M Sub-word Streaming Stack on: [{device.upper()}]")
 
-# Load compiled vocabulary configurations
-vocab_data = torch.load('model/vocab_config.pt', map_location=device)
-char_to_int, int_to_char = vocab_data['mappings']
-vocab_size = vocab_data['vocab_size']
+# Load trained BPE configurations
+TOKENIZER_PATH = 'model/agastya_tokenizer.json'
+if not os.path.exists(TOKENIZER_PATH):
+    raise FileNotFoundError(f"Critical Error: '{TOKENIZER_PATH}' was not located in the workspace root.")
 
-# System Target Metrics Hyperparameters
+tokenizer = Tokenizer.from_file(TOKENIZER_PATH)
+vocab_size = tokenizer.get_vocab_size()
+
+# Architectural Dimension Hyperparameters 
 block_size = 256
 n_embd = 384
 n_head = 6
@@ -87,7 +91,7 @@ def load_weights_into_vram():
 
 load_weights_into_vram()
 
-app = FastAPI(title="Agastya Streaming Core")
+app = FastAPI(title="Agastya Core Sub-word Engine")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -99,35 +103,46 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
 
-encode = lambda s: [char_to_int[c] for c in s if c in char_to_int]
-decode = lambda l: ''.join([int_to_char[i] for i in l])
-
-async def character_streamer(prompt: str):
-    context = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
-    idx = context
+async def subword_token_streamer(prompt: str):
+    """Streams text pieces flawlessly using an immutable delta text decoder loop"""
+    context_ids = tokenizer.encode(prompt).ids
+    idx = torch.tensor([context_ids], dtype=torch.long, device=device)
     
-    for _ in range(250):
+    generated_tokens = []
+    previous_decoded_string = ""
+    
+    for _ in range(150): # Token generation target horizon ceiling
         idx_cond = idx[:, -block_size:]
         with torch.no_grad():
-            logits = model(idx_cond)[:, -1, :] / 0.3
+            logits = model(idx_cond)[:, -1, :] / 0.45  # Sampling temperature configuration
+        
         probs = F.softmax(logits, dim=-1)
         idx_next = torch.multinomial(probs, num_samples=1)
         idx = torch.cat((idx, idx_next), dim=1)
         
-        next_char = int_to_char[idx_next[0, 0].item()]
+        next_token_id = idx_next[0, 0].item()
+        generated_tokens.append(next_token_id)
         
-        recent_text = "".join([int_to_char[i] for i in idx[0, -7:].tolist()])
-        if "User" in recent_text or "user" in recent_text:
+        # INDUSTRIAL-GRADE STREAMING METHOD: Compute structural textual deltas
+        full_decoded_string = tokenizer.decode(generated_tokens)
+        next_text_chunk = full_decoded_string[len(previous_decoded_string):]
+        previous_decoded_string = full_decoded_string
+        
+        # AGGRESSIVE SYSTEM STOP-GUARD: Intercepts raw variations of turn-taking indicators
+        if "User" in next_text_chunk or "user" in next_text_chunk or "User" in full_decoded_string[-8:]:
             break
             
-        yield next_char
-        await asyncio.sleep(0.001)
+        if next_text_chunk:
+            yield next_text_chunk
+            
+        await asyncio.sleep(0.005)
 
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     try:
-        prompt = f"User: {request.message}\nAgastya:"
-        return StreamingResponse(character_streamer(prompt), media_type="text/plain")
+        # BPE special token anchors applied cleanly to format historical context
+        formatted_prompt = f"User: {request.message}\nAgastya:"
+        return StreamingResponse(subword_token_streamer(formatted_prompt), media_type="text/plain")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -137,12 +152,11 @@ async def reload_weights_endpoint():
         if device == 'cuda':
             torch.cuda.empty_cache()
         if load_weights_into_vram():
-            return {"status": "success", "message": "Neural layers updated instantly in VRAM."}
-        raise HTTPException(status_code=404, detail="Weights binary missing.")
+            return {"status": "success", "message": "Sub-word parameter layers updated instantly in VRAM."}
+        raise HTTPException(status_code=404, detail="Target checkpoint binary weights missing.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# DYNAMIC SPECIFICATION ENDPOINT NODE
 @app.get("/health")
 def health_check():
     return {
