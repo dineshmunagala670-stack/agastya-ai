@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Pacifico } from "next/font/google";
 
-// Initialize the cursive font natively for Next.js
+// Initialize the brand cursive font natively for Next.js
 const cursiveFont = Pacifico({
   weight: "400",
   subsets: ["latin"],
@@ -17,7 +18,7 @@ export default function AgastyaFullConnectedPage() {
     { type: "ai", text: "A pointer is a variable that holds the memory address of another variable rather than holding a direct value natively." }
   ]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [apiStatus, setApiStatus] = useState("ONLINE");
+  const [apiStatus] = useState("ONLINE");
 
   // Reference hooks to bind directly to the terminal scrolling viewport
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -31,9 +32,11 @@ export default function AgastyaFullConnectedPage() {
     { label: "VOCAB DICTIONARY", value: "2,000 Tokens", sub: "Byte-Level BPE Density" }
   ];
 
-  // 🎯 REAL-TIME SCROLL ANCHOR LOGIC
-  // Automatically snaps container view directly to the lowest pixel row whenever token vectors update
+  // 🎯 REAL-TIME SCROLL ANCHOR & BROWSER TAB TITLE OVERRIDE
   useEffect(() => {
+    // Overrides the generic "Create Next App" template title instantly
+    document.title = "Agastya AI | Live Workspace Matrix";
+
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
@@ -67,7 +70,6 @@ export default function AgastyaFullConnectedPage() {
       let compiledResponseString = "";
 
       if (reader) {
-        // Recursive stream acquisition block eating network packet fragments natively
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -75,7 +77,6 @@ export default function AgastyaFullConnectedPage() {
           const standardTextChunk = decoder.decode(value, { stream: true });
           compiledResponseString += standardTextChunk;
 
-          // Push token updates directly into state array frames sequentially
           setTerminalLines((prev) => {
             const architecturalCopy = [...prev];
             architecturalCopy[architecturalCopy.length - 1] = { 
@@ -108,27 +109,25 @@ export default function AgastyaFullConnectedPage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-[#d2ff00]/30 scroll-smooth font-sans antialiased">
       
-      {/* SECTION 1: THE MIDJOURNEY FULL-SCREEN HERO FOLD */}
-      <section className="h-screen w-full relative flex flex-col justify-between overflow-hidden border-b border-zinc-900 select-none">
+      {/* SECTION 1: HERO FOLD */}
+      <section className="min-h-screen w-full relative flex flex-col justify-between overflow-hidden border-b border-zinc-900 select-none pb-24 md:pb-0">
         
-        {/* TOP NAVBAR LAYOUT */}
-        <header className="w-full max-w-[1600px] mx-auto px-8 py-6 flex items-center justify-between z-30">
-          {/* Capitalized Cursive Logo element */}
-          <div className={`${cursiveFont.className} text-xl tracking-wide text-zinc-300 normal-case`}>
+        {/* RESPONSIVE NAVBAR LAYOUT */}
+        <header className="w-full max-w-[1600px] mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-6 z-30">
+          <Link href="/" className={`${cursiveFont.className} text-xl tracking-wide text-zinc-300 normal-case`}>
             Agastya Labs
-          </div>
+          </Link>
 
-          {/* Centered Navigation Matrix Links */}
-          <nav className="hidden md:flex items-center gap-10 text-[10px] font-mono tracking-[0.25em] text-zinc-400 uppercase">
+          {/* CONNECTED NAVIGATION MATRIX LINKS - FULLY VISIBLE ACROSS ALL PLATFORMS */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[9px] sm:text-[10px] font-mono tracking-[0.25em] text-zinc-400 uppercase">
             <span onClick={scrollToWorkspace} className="hover:text-white cursor-pointer transition-colors">Workspace</span>
             <a href="#matrix-specs" className="hover:text-white transition-colors">Architecture</a>
-            <span className="hover:text-white cursor-pointer transition-colors">Documentation</span>
-            <span className="hover:text-white cursor-pointer transition-colors">FAQ</span>
+            <Link href="/docs" className="hover:text-white text-[#d2ff00] transition-colors cursor-pointer">Documentation</Link>
+            <Link href="/article" className="hover:text-white transition-colors cursor-pointer text-zinc-400">Article</Link>
           </nav>
 
-          {/* Action Sign-In & Neon Trigger Block */}
           <div className="flex items-center gap-6">
-            <span className="text-[10px] font-mono tracking-[0.2em] text-[#d2ff00] uppercase hidden sm:inline">
+            <span className="text-[10px] font-mono tracking-[0.2em] text-[#d2ff00] uppercase hidden lg:inline">
               SYS STATUS: {apiStatus}
             </span>
             <button 
@@ -143,17 +142,24 @@ export default function AgastyaFullConnectedPage() {
         {/* SUBTLE BACKGROUND GRID MESH PATTERN */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#111_1px,transparent_1px),linear-gradient(to_bottom,#111_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,#000_70%,transparent_100%)] opacity-30 pointer-events-none z-0" />
 
-        {/* MID-SCREEN ABSTRACT GRADIENT FIELD CORE */}
+        {/* ABSTRACT GRADIENT FIELD CORE */}
         <div className="absolute top-[35%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[250px] bg-gradient-to-tr from-zinc-700 via-zinc-900 to-black rounded-full blur-[120px] opacity-20 pointer-events-none z-0" />
 
-        {/* TYPOGRAPHY BOUNDARY: Adjusted offset to reveal exactly 75% of the text block */}
-        <div className="w-full absolute bottom-0 left-0 right-0 z-10 overflow-hidden translate-y-[25%] pointer-events-none">
+        {/* HERO TYPOGRAPHY BOUNDARY */}
+        <div className="w-full absolute bottom-0 left-0 right-0 z-10 overflow-hidden translate-y-[25%] pointer-events-none hidden md:block">
           <h1 className="text-[18vw] font-black uppercase tracking-tighter leading-none text-white text-center transform scale-y-105 select-none">
             Agastya
           </h1>
         </div>
 
-        {/* SCROLL FUNCTION CALL TO ACTION COMPONENT */}
+        {/* MOBILE FALLBACK HERO TITLE */}
+        <div className="md:hidden flex-1 flex items-center justify-center px-6 text-center z-10 relative">
+          <h1 className="text-6xl font-black uppercase tracking-tighter text-white">
+            AGASTYA
+          </h1>
+        </div>
+
+        {/* SCROLL BUTTON */}
         <div className="absolute bottom-8 right-8 z-20 flex flex-col items-center gap-2 animate-bounce">
           <button 
             onClick={scrollToWorkspace}
@@ -165,10 +171,10 @@ export default function AgastyaFullConnectedPage() {
         </div>
       </section>
 
-      {/* SECTION 2: SCROLL-DOWN WORKSPACE AREA */}
+      {/* SECTION 2: WORKSPACE AREA */}
       <section id="workspace" className="max-w-[1400px] mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-12 gap-16 items-start relative z-20">
         
-        {/* LEFT COLUMN DESCRIPTION INFO BOX */}
+        {/* LEFT COLUMN INFO */}
         <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-28">
           <div className="font-mono text-[10px] tracking-widest text-[#d2ff00] uppercase">
             // LIVE INFERENCE WORKSPACE
@@ -177,31 +183,35 @@ export default function AgastyaFullConnectedPage() {
             Stream Language Parameters Natively
           </h2>
           <p className="text-zinc-400 text-sm leading-relaxed max-w-md">
-            Interact with the freshly calibrated 38M parameter weight layout. Sub-word token vectors are processed on local CPU container matrices with integrated stop-guards to prevent infinite loop generations.
+            Interact with the freshly calibrated 38M parameter weight layout. Sub-word token vectors are processed on cloud CPU container matrices with integrated stop-guards to prevent infinite loop generations.
           </p>
-          <div className="pt-2">
-            <span className="text-[11px] font-mono text-zinc-600 uppercase block">Engine Architecture Precision:</span>
-            <span className="text-xs font-mono text-zinc-300 mt-1 block">32-bit Floating-Point (FP32) Core</span>
+          <div className="pt-2 space-y-2">
+            <div>
+              <span className="text-[11px] font-mono text-zinc-600 uppercase block">Engine Architecture Precision:</span>
+              <span className="text-xs font-mono text-zinc-300 mt-1 block">32-bit Floating-Point (FP32) Core</span>
+            </div>
+            <Link href="/article" className="text-xs font-mono text-[#d2ff00] hover:underline block pt-2">
+              [ Read Full Technical Article → ]
+            </Link>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: RAW BLACK BRUTALIST TERMINAL DESIGN */}
+        {/* RIGHT COLUMN: BRUTALIST TERMINAL */}
         <div className="lg:col-span-8 w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8 flex flex-col justify-between min-h-[460px] shadow-2xl relative">
           
-          {/* Internal Terminal Window Top Bar */}
-          <div className="flex items-center justify-between border-b border-zinc-900 pb-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4 mb-6">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800 block" />
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800 block" />
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-800 block" />
               <span className="text-[11px] font-mono text-zinc-500 ml-2">agastya_inference_loop.sh</span>
             </div>
-            <span className="text-[9px] font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+            <span className="text-[9px] font-mono text-zinc-500 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded self-start sm:self-auto">
               CTX_HORIZON=256
             </span>
           </div>
 
-          {/* Message Stack Area with active scroll listener hooks pinned to it */}
+          {/* Message Stack Area */}
           <div 
             ref={scrollContainerRef}
             className="flex-1 space-y-6 overflow-y-auto max-h-[320px] pr-2 text-xs sm:text-sm font-mono leading-relaxed scroll-smooth"
@@ -223,7 +233,7 @@ export default function AgastyaFullConnectedPage() {
             ))}
           </div>
 
-          {/* Brutalist Query Input Bar */}
+          {/* Query Input Bar */}
           <form onSubmit={handleExecute} className="mt-8 flex gap-3 border-t border-zinc-900 pt-4">
             <input
               type="text"
@@ -244,7 +254,7 @@ export default function AgastyaFullConnectedPage() {
         </div>
       </section>
 
-      {/* SECTION 3: MATRIX TELEMETRY SPECIFICATIONS GRID */}
+      {/* SECTION 3: SPECIFICATIONS GRID */}
       <section id="matrix-specs" className="max-w-[1400px] mx-auto px-6 py-24 border-t border-zinc-900 relative z-20">
         <div className="mb-14">
           <div className="font-mono text-[10px] tracking-widest text-zinc-500 uppercase mb-2">// SPECIFICATION TELEMETRY PROFILE</div>
@@ -267,40 +277,38 @@ export default function AgastyaFullConnectedPage() {
         </div>
       </section>
 
-      {/* SECTION 4: WANT TO TRAIN THIS YOURSELF COMPONENT */}
+      {/* SECTION 4: DOCUMENTATION DEEP-DIVE FUNNEL */}
       <section className="max-w-[1400px] mx-auto px-6 pb-28 relative z-20">
         <div className="w-full rounded-2xl border border-zinc-900 bg-zinc-950 p-8 sm:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div className="space-y-2.5">
             <div className="text-[10px] font-mono text-[#d2ff00] tracking-widest uppercase font-bold">
-              // OPEN SOURCE COMMITMENT
+              // COMPLETE SYSTEMS ARCHITECTURE
             </div>
             <h3 className="text-xl font-bold tracking-tight uppercase text-white">
-              Want to train this yourself?
+              Explore the Project Documentation
             </h3>
             <p className="text-zinc-400 text-sm max-w-2xl leading-relaxed font-sans">
-              Review raw local fine-tuning configurations, modify dataset distribution metrics, or audit the underlying causal attention blocks. Clone the source repository to build your own local parameters execution branch.
+              Review full descriptions of our Byte-Level BPE Tokenizer, the mathematical multi-head causal attention mask block definitions, and the MLOps token alignment rules that prevent system gibberish translation bugs.
             </p>
           </div>
 
-          <a 
-            href="https://github.com/YOUR_USERNAME/YOUR_REPO_NAME" 
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link 
+            href="/docs" 
             className="w-full md:w-auto px-6 py-4 rounded-lg bg-white text-black font-mono font-bold text-xs tracking-wider uppercase text-center hover:bg-zinc-200 transition-colors whitespace-nowrap"
           >
-            Train This Yourself ↗
-          </a>
+            Open Documentation Manual ↗
+          </Link>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer className="border-t border-zinc-900 bg-black relative z-20">
-        <div className="max-w-[1400px] mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between text-[10px] font-mono text-zinc-500 gap-4 uppercase tracking-widest">
+        <div className="max-w-[1400px] mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between text-[10px] font-mono text-zinc-500 gap-4 uppercase tracking-widest text-center sm:text-left">
           <div>Copyright © Agastya Project System</div>
-          <div className="flex gap-8">
-            <span className="hover:text-white cursor-pointer transition-colors">Architecture</span>
-            <span className="hover:text-white cursor-pointer transition-colors">MLOps Sync</span>
-            <span className="hover:text-white cursor-pointer transition-colors">GitHub</span>
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2">
+            <a href="#matrix-specs" className="hover:text-white transition-colors">Architecture</a>
+            <Link href="/docs" className="hover:text-white transition-colors">Documentation</Link>
+            <Link href="/article" className="hover:text-white transition-colors">Technical Article</Link>
           </div>
         </div>
       </footer>
